@@ -18,7 +18,7 @@ def update_record(filename, record_id, updated_record):
     with open(filename, mode='r', newline='') as file:
         reader = csv.reader(file)
         for row in reader:
-            if row[0] == record_id:
+            if row and row[0] == record_id:
                 rows.append(updated_record)
             else:
                 rows.append(row)
@@ -27,22 +27,18 @@ def update_record(filename, record_id, updated_record):
         writer = csv.writer(file)
         writer.writerows(rows)
 
-def delete_record(filename, record_id):
-    rows = []
+def is_user_exists(filename, search_id):
     with open(filename, mode='r', newline='') as file:
         reader = csv.reader(file)
         for row in reader:
-            if row[0] != record_id:
-                rows.append(row)
-
-    with open(filename, mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerows(rows)
-
-def is_user_exists(filename, search_id):
-    with open(filename, mode='r', newline='') as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            if row['username'] == search_id:
+            if row and row[0] == search_id:
                 return True
     return False
+
+def return_user_record(filename, user):
+    if not is_user_exists(filename, user): return None
+    with open(filename, mode='r', newline='') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            if row and row[0] == user:
+                return row

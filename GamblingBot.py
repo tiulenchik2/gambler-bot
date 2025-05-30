@@ -1,7 +1,7 @@
 ﻿from os import getenv
 import asyncio
 import logging
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Router, Dispatcher, types
 from aiogram.filters.command import Command
 from aiogram.types import Dice
 
@@ -11,11 +11,32 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=getenv("GAMBLING_BOT_TOKEN"))
 DATA_FILE = "test_users.csv"
 VALUES = ["BAR", "Grapes", "Lemon", "7"]
-dp = Dispatcher()
+router = Router()
+dp = Dispatcher(); dp.include_router(router)
 
-@dp.message()
+@router.message(Command("add"))
+async def add_user(message: types.Message):
+    logging.info("Add command received")
+    if CSVWork.is_user_exists(DATA_FILE, message.from_user.username):
+        await message.reply(f"Ти вже у статистиці!")
+    else:
+        CSVWork.create_record(DATA_FILE, [message.from_user.username, 0, 0, 0])
+        await message.reply(f"Записав тебе в свою пам'ять. Приємної гри!")
+
+@router.message(Command("stats"))
+async def check_stats(message: types.Message):
+    logging.info("Stats command received")
+    if CSVWork.is_user_exists(DATA_FILE, message.from_user.username):
+        user_stats = CSVWork.return_user_record(DATA_FILE, message.from_user.username)
+        await message.reply(f"Стата користувача @{message.from_user.username}\n"
+        f"РАХУНОК: {user_stats[3]}\n\nВсього круток: {user_stats[1]}\nЗ них виграшних: {user_stats[2]}\n")
+    else:
+        await message.reply("Не знайшов інфи по користувачу. Можливо, зарєгаєшся?)")
+
+@router.message()
 async def check_rolls(message: types.Message):
     if isinstance(message.dice, Dice):
+        logging.info("Roll began")
         rolled = message.dice
         dice_value = rolled.value
         
@@ -24,24 +45,22 @@ async def check_rolls(message: types.Message):
         for _ in range(3):
             result.append(VALUES[dice_value % 4])
             dice_value //= 4
-        await asyncio.sleep(3)
+        user_stat = CSVWork.return_user_record(DATA_FILE, message.from_user.username)
+        user_stat[1] = str(int(user_stat[1]) + 1)
         if rolled.emoji == "🎰":
             if rolled.value == 64:
-                pass # add soon score tracking
-@dp.message(Command("add"))
-async def add_user(message: types.Message):
-    print(1)
-    if CSVWork.is_user_exists(DATA_FILE, message.from_user.username):
-        await message.reply(f"Ти вже у статистиці!")
-    else:
-        CSVWork.create_record(DATA_FILE, [message.from_user.username, 0, 0, 0])
-        await message.reply(f"Записав тебе в свою пам'ять. Приємної гри!'")
-
-@dp.message(Command("stats"))
-async def check_stats(message: types.Message):
-    await message.answer(str(CSVWork.read_records(DATA_FILE)))
-
-
+                user_stat[3] = str(int(user_stat[3]) + 50)
+                user_stat[2] = str(int(user_stat[2]) + 1)
+                asyncio.sleep(2.7)
+                await message.answer("ГООООЛ! ТРИ ТОПОРА!!!")
+            elif rolled.value in (1, 22, 43):
+                user_stat[3] = str(int(user_stat[3]) + 25)
+                user_stat[2] = str(int(user_stat[2]) + 1)
+                asyncio.sleep(2.7)
+                await message.answer("Гоооол! Три в ряд!")
+            else:
+                user_stat[3] = str(int(user_stat[3]) - 1)
+        CSVWork.update_record(DATA_FILE, message.from_user.username, user_stat)
 async def main():
     await dp.start_polling(bot)
 if __name__ == "__main__":
