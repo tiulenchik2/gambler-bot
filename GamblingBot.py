@@ -8,11 +8,10 @@ from aiogram.types import Dice
 import CSVWork
 
 logging.basicConfig(level=logging.INFO)
-bot = Bot(token=getenv("PIVOSLAVE_BOT_TOKEN"))
+bot = Bot(token=getenv("GAMBLING_BOT_TOKEN"))
 DATA_FILE = "test_users.csv"
 VALUES = ["BAR", "Grapes", "Lemon", "7"]
-#CHAT_ID = -1002468358023
-CHAT_ID = 1036557401
+CHAT_ID = -1002196221968
 router = Router()
 dp = Dispatcher(); dp.include_router(router)
 
@@ -46,6 +45,11 @@ async def check_all_stats(message: types.Message):
 @router.message(F.chat.id == CHAT_ID)
 async def check_rolls(message: types.Message):
     if isinstance(message.dice, Dice):
+        if not CSVWork.is_user_exists(DATA_FILE, message.from_user.username):
+            CSVWork.create_record(DATA_FILE, [message.from_user.username, -1, 0, 1])
+            await message.reply("Вітання у грі, автоматично зареєстрував.")
+        else:
+            pass
         user_stat = CSVWork.return_user_record(DATA_FILE, message.from_user.username)
         if message.forward_date:
             await message.reply("Шахраям даємо по шапці. -100 з рахунку.")
