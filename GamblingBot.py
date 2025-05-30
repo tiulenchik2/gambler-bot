@@ -33,6 +33,14 @@ async def check_stats(message: types.Message):
     else:
         await message.reply("Не знайшов інфи по користувачу. Можливо, зарєгаєшся?)")
 
+@router.message(Command("stats_all"))
+async def check_all_stats(message: types.Message):
+    all_stats = CSVWork.sort_records(DATA_FILE, 3)
+    res = ''
+    for a in range(len(all_stats)):
+        res += f"{a+1}. @{all_stats[a][0]}: {all_stats[a][3]} очок, {all_stats[a][1]} круток ({all_stats[a][2]} виграшні)\n"
+    await message.reply(res)
+
 @router.message()
 async def check_rolls(message: types.Message):
     if isinstance(message.dice, Dice):

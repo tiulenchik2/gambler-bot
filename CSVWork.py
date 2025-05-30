@@ -42,3 +42,8 @@ def return_user_record(filename, user):
         for row in reader:
             if row and row[0] == user:
                 return row
+
+def sort_records(filename, index):
+    all_records = read_records(filename)
+    all_records.sort(key=lambda x: x[index])
+    return all_records
