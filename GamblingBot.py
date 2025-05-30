@@ -42,6 +42,12 @@ async def check_all_stats(message: types.Message):
         res += f"{a+1}. {all_stats[a][0]}: {all_stats[a][3]} очок, {all_stats[a][1]} круток ({all_stats[a][2]} виграшні)\n"
     await message.reply(res)
 
+@router.message(Command("info"), F.chat.id == CHAT_ID)
+async def announce_info(message: types.Message):
+    await message.reply("Правила до біса прості:\n- кидаєш смайлик слота або пишеш /add (що, скоро, буде вже видалено)."
+                        "\n- кожна крутка коштує 1 очко\n- за три в ряд нараховується +25 очок\n- за 777 нараховується +50"
+                        "\n/stats виводить твою інфу, а /stats_all - топ чату.\nЩиро вдячний, ваш девелопер <3")
+
 @router.message(F.chat.id == CHAT_ID)
 async def check_rolls(message: types.Message):
     if isinstance(message.dice, Dice):
