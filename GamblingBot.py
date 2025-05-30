@@ -36,30 +36,33 @@ async def check_stats(message: types.Message):
 @router.message()
 async def check_rolls(message: types.Message):
     if isinstance(message.dice, Dice):
-        logging.info("Roll began")
-        rolled = message.dice
-        dice_value = rolled.value
-        
-        dice_value -= 1
-        result = []
-        for _ in range(3):
-            result.append(VALUES[dice_value % 4])
-            dice_value //= 4
         user_stat = CSVWork.return_user_record(DATA_FILE, message.from_user.username)
-        user_stat[1] = str(int(user_stat[1]) + 1)
-        if rolled.emoji == "🎰":
-            if rolled.value == 64:
-                user_stat[3] = str(int(user_stat[3]) + 50)
-                user_stat[2] = str(int(user_stat[2]) + 1)
-                asyncio.sleep(2.7)
-                await message.answer("ГООООЛ! ТРИ ТОПОРА!!!")
-            elif rolled.value in (1, 22, 43):
-                user_stat[3] = str(int(user_stat[3]) + 25)
-                user_stat[2] = str(int(user_stat[2]) + 1)
-                asyncio.sleep(2.7)
-                await message.answer("Гоооол! Три в ряд!")
-            else:
-                user_stat[3] = str(int(user_stat[3]) - 1)
+        if message.forward_date:
+            await message.reply("Шахраям даємо по шапці. -100 з рахунку.")
+            user_stat[3] = str(int(user_stat[3]) - 100)
+        else:
+            logging.info("Roll began")
+            rolled = message.dice
+            dice_value = rolled.value
+            dice_value -= 1
+            result = []
+            for _ in range(3):
+                result.append(VALUES[dice_value % 4])
+                dice_value //= 4
+            user_stat[1] = str(int(user_stat[1]) + 1)
+            if rolled.emoji == "🎰":
+                if rolled.value == 64:
+                    user_stat[3] = str(int(user_stat[3]) + 50)
+                    user_stat[2] = str(int(user_stat[2]) + 1)
+                    asyncio.sleep(2.7)
+                    await message.reply("ГООООЛ! ТРИ ТОПОРА!!!")
+                elif rolled.value in (1, 22, 43):
+                    user_stat[3] = str(int(user_stat[3]) + 25)
+                    user_stat[2] = str(int(user_stat[2]) + 1)
+                    asyncio.sleep(2.7)
+                    await message.reply("Гоооол! Три в ряд!")
+                else:
+                    user_stat[3] = str(int(user_stat[3]) - 1)
         CSVWork.update_record(DATA_FILE, message.from_user.username, user_stat)
 async def main():
     await dp.start_polling(bot)
