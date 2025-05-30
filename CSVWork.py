@@ -45,5 +45,5 @@ def return_user_record(filename, user):
 
 def sort_records(filename, index):
     all_records = read_records(filename)
-    all_records.sort(key=lambda x: x[index])
+    all_records.sort(key=lambda x: int(x[index]), reverse=True)
     return all_records
