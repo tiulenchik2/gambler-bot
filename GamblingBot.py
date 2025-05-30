@@ -11,7 +11,8 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=getenv("PIVOSLAVE_BOT_TOKEN"))
 DATA_FILE = "test_users.csv"
 VALUES = ["BAR", "Grapes", "Lemon", "7"]
-CHAT_ID = -100123456789
+#CHAT_ID = -1002468358023
+CHAT_ID = 1036557401
 router = Router()
 dp = Dispatcher(); dp.include_router(router)
 
@@ -37,9 +38,9 @@ async def check_stats(message: types.Message):
 @router.message(Command("stats_all"), F.chat.id == CHAT_ID)
 async def check_all_stats(message: types.Message):
     all_stats = CSVWork.sort_records(DATA_FILE, 3)
-    res = ''
+    res = 'ТОП ГЕМБЛЕРІВ ЧАТІКА:\n'
     for a in range(len(all_stats)):
-        res += f"{a+1}. @{all_stats[a][0]}: {all_stats[a][3]} очок, {all_stats[a][1]} круток ({all_stats[a][2]} виграшні)\n"
+        res += f"{a+1}. {all_stats[a][0]}: {all_stats[a][3]} очок, {all_stats[a][1]} круток ({all_stats[a][2]} виграшні)\n"
     await message.reply(res)
 
 @router.message(F.chat.id == CHAT_ID)
