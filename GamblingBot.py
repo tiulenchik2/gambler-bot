@@ -4,6 +4,8 @@ import logging
 from aiogram import Bot, Router, Dispatcher, types, F
 from aiogram.filters.command import Command
 from aiogram.types import Dice
+from aiogram.exceptions import TelegramBadRequest
+from pydantic_core.core_schema import field_after_validator_function
 
 import CSVWork
 
@@ -17,7 +19,6 @@ dp = Dispatcher(); dp.include_router(router)
 
 @router.message(Command("stats"), F.chat.id == CHAT_ID)
 async def check_stats(message: types.Message):
-    logging.info("Stats command received")
     if CSVWork.is_user_exists(DATA_FILE, message.from_user.id):
         user_stats = CSVWork.return_user_record(DATA_FILE, message.from_user.id)
         await message.reply(f"Стата користувача {user_stats[0]}\n"
@@ -53,7 +54,6 @@ async def check_rolls(message: types.Message):
             await message.reply("Шахраям даємо по шапці. -100 з рахунку.")
             user_stat[3] = str(int(user_stat[3]) - 100)
         else:
-            logging.info("Roll began")
             rolled = message.dice
             user_stat[1] = str(int(user_stat[1]) + 1)
             if rolled.emoji == "🎰":
@@ -66,6 +66,16 @@ async def check_rolls(message: types.Message):
                 else:
                     user_stat[3] = str(int(user_stat[3]) - 1)
         CSVWork.update_record(DATA_FILE, user_name, user_stat)
+        asyncio.create_task(
+            delete_dice(chat_id=CHAT_ID, message_id=message.message_id, delay=7.0))
+       
+async def delete_dice(chat_id: int, message_id: int, delay: float):
+    await asyncio.sleep(delay)
+    try:
+        await bot.delete_message(chat_id=chat_id, message_id=message_id)
+    except TelegramBadRequest:
+        pass
+
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
