@@ -14,12 +14,12 @@ def read_records(filename, chat_id):
                 all_records.append(row)
     return all_records
 
-def update_record(filename, record_id, updated_record):
+def update_record(filename, user_id, chat_id, updated_record):
     rows = []
     with open(filename, mode='r', newline='') as file:
         reader = csv.reader(file)
         for row in reader:
-            if row and row[0] == record_id:
+            if row and row[4] == str(user_id) and row[5] == str(chat_id):
                 rows.append(updated_record)
             else:
                 rows.append(row)

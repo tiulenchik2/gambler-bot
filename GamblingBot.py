@@ -74,7 +74,7 @@ async def check_rolls(message: types.Message):
                     user_stat[2] = str(int(user_stat[2]) + 1)
                 else:
                     user_stat[3] = str(int(user_stat[3]) - 1)
-        CSVWork.update_record(DATA_FILE, user_name, user_stat)
+        CSVWork.update_record(DATA_FILE, message.from_user.id, message.chat.id, user_stat)
         asyncio.create_task(
             delete_dice(chat_id=message.chat.id, message_id=message.message_id, delay=7.0))
        
