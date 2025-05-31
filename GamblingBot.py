@@ -27,14 +27,14 @@ async def check_stats(message: types.Message):
 
 @router.message(Command("stats_all"))
 async def check_all_stats(message: types.Message):
-    all_stats = CSVWork.sort_records(DATA_FILE, 3)
+    all_stats = CSVWork.sort_records(DATA_FILE, message.chat.id, 3)
     res = 'ВСЯ СТАТА ГЕМБЛЕРІВ ЧАТІКА:\n'
     for a in range(len(all_stats)):
         res += f"{a+1}. {all_stats[a][0]}: {all_stats[a][3]} очок, {all_stats[a][1]} круток ({all_stats[a][2]} виграшні)\n"
     await message.reply(res)
 @router.message(Command("stats_top"))
 async def check_all_stats(message: types.Message):
-    all_stats = CSVWork.sort_records(DATA_FILE, 3)
+    all_stats = CSVWork.sort_records(DATA_FILE, message.chat.id, 3)
     TOP_VALUE = len(all_stats) if len(all_stats) < 10 else 10
     res = f'ТОП-{TOP_VALUE} ГЕМБЛЕРІВ ЧАТІКА:\n'
     for a in range(TOP_VALUE):

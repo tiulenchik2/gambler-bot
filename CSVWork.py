@@ -5,12 +5,13 @@ def create_record(filename, record):
         writer = csv.writer(file)
         writer.writerow(record)
 
-def read_records(filename):
+def read_records(filename, chat_id):
     all_records = []
     with open(filename, mode='r', newline='') as file:
         reader = csv.reader(file)
         for row in reader:
-            all_records.append(row)
+            if row[5] == str(chat_id):
+                all_records.append(row)
     return all_records
 
 def update_record(filename, record_id, updated_record):
@@ -43,7 +44,7 @@ def return_user_record(filename, user_id, chat_id):
             if row and row[4] == str(user_id) and row[5] == str(chat_id):
                 return row
 
-def sort_records(filename, index):
-    all_records = read_records(filename)
+def sort_records(filename, chat_id, index):
+    all_records = read_records(filename, chat_id)
     all_records.sort(key=lambda x: int(x[index]), reverse=True)
     return all_records
