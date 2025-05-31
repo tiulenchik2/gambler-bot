@@ -1,4 +1,4 @@
-﻿from os import getenv
+﻿from os import getenv; from dotenv import load_dotenv
 import asyncio
 import logging
 from aiogram import Bot, Router, Dispatcher, types, F
@@ -10,7 +10,7 @@ from pydantic_core.core_schema import field_after_validator_function
 import CSVWork
 
 logging.basicConfig(level=logging.INFO)
-bot = Bot(token=getenv("GAMBLING_BOT_TOKEN"))
+load_dotenv(); bot = Bot(token=getenv("GAMBLING_BOT_TOKEN"))
 DATA_FILE = "test_users.csv"
 VALUES = ["BAR", "Grapes", "Lemon", "7"]
 router = Router()
