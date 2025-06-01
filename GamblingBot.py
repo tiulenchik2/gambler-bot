@@ -30,7 +30,7 @@ def get_stats_page(all_stats, page):
     start = page * USERS_PER_PAGE
     end = start + USERS_PER_PAGE
     for idx, user in enumerate(all_stats[start:end], start=start + 1):
-        res += f"<b>{idx}</b>. {user[1]}: {user[6]} очок, {user[4]} круток ({user[5]} виграшні)\n"
+        res += f"<b>{idx}</b>. {user[1]}: {user[4]} очок, {user[2]} круток ({user[3]} виграшні)\n"
     return res
 
 @router.message(Command("stats"))
@@ -42,10 +42,10 @@ async def check_stats(message: types.Message):
         print(user_stats)
         await message.reply(
             f"<b>Стата користувача {user_stats[1]}</b>\n\n"
-            f"<b>РАХУНОК: {user_stats[6]}</b>\n"
+            f"<b>РАХУНОК: {user_stats[4]}</b>\n"
             f"Місце у рейтингу: {user_place}\n"
-            f"<b>Всього круток: {user_stats[4]}</b>\n"
-            f"З них виграшних: {user_stats[5]}\n",
+            f"<b>Всього круток: {user_stats[2]}</b>\n"
+            f"З них виграшних: {user_stats[3]}\n",
         parse_mode=ParseMode.HTML)
     else:
         await message.reply("Не знайшов інфи по користувачу.")
@@ -92,7 +92,7 @@ async def check_all_stats(message: types.Message):
     TOP_VALUE = len(all_stats) if len(all_stats) < 10 else 10
     res = f'<b>ТОП-{TOP_VALUE} ГЕМБЛЕРІВ ЧАТІКА:</b>\n'
     for a in range(TOP_VALUE):
-        res += f"<b>{a+1}</b>. {all_stats[a][1]}: {all_stats[a][6]} очок, {all_stats[a][4]} круток ({all_stats[a][5]} виграшні)\n"
+        res += f"<b>{a+1}</b>. {all_stats[a][1]}: {all_stats[a][4]} очок, {all_stats[a][2]} круток ({all_stats[a][3]} виграшні)\n"
     await message.reply(res, parse_mode=ParseMode.HTML)
     asyncio.create_task(
             delete_message(chat_id=message.chat.id, message_id=message.message_id, delay=STATS_DELETION_DELAY))
