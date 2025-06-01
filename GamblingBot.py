@@ -4,13 +4,13 @@ import logging
 from aiogram import Bot, Router, Dispatcher, types, F
 from aiogram.filters.command import Command
 from aiogram.types import Dice
-from aiogram.exceptions import TelegramBadRequest, TelegramRetryAfter
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.enums import ParseMode
 
-import CSVWork
-from config import DATA_FILE, PENALTY, USERS_PER_PAGE, DELETION_DELAY, STATS_DELETION_DELAY, THREE_IN_A_ROW_WIN, SEVEN_WIN
+import db_opers
+from config import PENALTY, USERS_PER_PAGE, DELETION_DELAY, STATS_DELETION_DELAY, THREE_IN_A_ROW_WIN, SEVEN_WIN
 
 logging.basicConfig(level=logging.INFO)
 load_dotenv(); bot = Bot(token=getenv("TEST_BOT_TOKEN"))
@@ -30,25 +30,22 @@ def get_stats_page(all_stats, page):
     start = page * USERS_PER_PAGE
     end = start + USERS_PER_PAGE
     for idx, user in enumerate(all_stats[start:end], start=start + 1):
-        res += f"<b>{idx}</b>. {user[0]}: {user[3]} очок, {user[1]} круток ({user[2]} виграшні)\n"
+        res += f"<b>{idx}</b>. {user[1]}: {user[6]} очок, {user[4]} круток ({user[5]} виграшні)\n"
     return res
 
 @router.message(Command("stats"))
 async def check_stats(message: types.Message):
-    if CSVWork.is_user_exists(DATA_FILE, message.from_user.id, message.chat.id):
-        user_stats = CSVWork.return_user_record(DATA_FILE, message.from_user.id, message.chat.id)
-        all_stats = CSVWork.sort_records(DATA_FILE, message.chat.id, 3)
-        user_place = None
-        for idx, user in enumerate(all_stats):
-            if str(user[4]) == str(message.from_user.id):
-                user_place = idx + 1
-                break
+    if db_opers.is_user_exists(message.from_user.id, message.chat.id):
+        user_stats = db_opers.get_user(message.from_user.id)
+        # (id, user_name, user_id, chat_id, spins, wins, score)
+        user_place = db_opers.get_user_rank(message.from_user.id, message.chat.id)
+        print(user_stats)
         await message.reply(
-            f"<b>Стата користувача {user_stats[0]}</b>\n\n"
-            f"<b>РАХУНОК: {user_stats[3]}</b>\n"
+            f"<b>Стата користувача {user_stats[1]}</b>\n\n"
+            f"<b>РАХУНОК: {user_stats[6]}</b>\n"
             f"Місце у рейтингу: {user_place}\n"
-            f"<b>Всього круток: {user_stats[1]}</b>\n"
-            f"З них виграшних: {user_stats[2]}\n",
+            f"<b>Всього круток: {user_stats[4]}</b>\n"
+            f"З них виграшних: {user_stats[5]}\n",
         parse_mode=ParseMode.HTML)
     else:
         await message.reply("Не знайшов інфи по користувачу.")
@@ -57,9 +54,10 @@ async def check_stats(message: types.Message):
     asyncio.create_task(
             delete_message(chat_id=message.chat.id, message_id=message.message_id+1, delay=STATS_DELETION_DELAY))
 
+
 @router.message(Command("stats_all"))
 async def check_all_stats(message: types.Message):
-    all_stats = CSVWork.sort_records(DATA_FILE, message.chat.id, 3)
+    all_stats = db_opers.get_sorted_users_by_score(message.chat.id)
     user_id = message.from_user.id
     CHAT_INDICES[user_id] = 0
     text = get_stats_page(all_stats, 0)
@@ -72,7 +70,7 @@ async def check_all_stats(message: types.Message):
 @router.callback_query(F.data.in_(["prev", "next"]))
 async def paginate_stats(query: types.CallbackQuery):
     user_id = query.from_user.id
-    all_stats = CSVWork.sort_records(DATA_FILE, query.message.chat.id, 3)
+    all_stats = db_opers.get_sorted_users_by_score(query.message.chat.id)
     max_page = max((len(all_stats) - 1) // USERS_PER_PAGE, 0)
     page = CHAT_INDICES.get(user_id, 0)
 
@@ -85,20 +83,16 @@ async def paginate_stats(query: types.CallbackQuery):
     text = get_stats_page(all_stats, page)
     try:
         await query.message.edit_text(text, reply_markup=get_keyboard(), parse_mode=ParseMode.HTML)
-    except TelegramRetryAfter as e:
-        await query.answer(f"Забагато запитів! Спробуй через {e.retry_after} сек.", show_alert=True)
-        return
     except TelegramBadRequest:
         pass
-    else:
-        await query.answer()
+    await query.answer()
 @router.message(Command("stats_top"))
 async def check_all_stats(message: types.Message):
-    all_stats = CSVWork.sort_records(DATA_FILE, message.chat.id, 3)
+    all_stats = db_opers.get_sorted_users_by_score(message.chat.id)
     TOP_VALUE = len(all_stats) if len(all_stats) < 10 else 10
     res = f'<b>ТОП-{TOP_VALUE} ГЕМБЛЕРІВ ЧАТІКА:</b>\n'
     for a in range(TOP_VALUE):
-        res += f"<b>{a+1}</b>. {all_stats[a][0]}: {all_stats[a][3]} очок, {all_stats[a][1]} круток ({all_stats[a][2]} виграшні)\n"
+        res += f"<b>{a+1}</b>. {all_stats[a][1]}: {all_stats[a][6]} очок, {all_stats[a][4]} круток ({all_stats[a][5]} виграшні)\n"
     await message.reply(res, parse_mode=ParseMode.HTML)
     asyncio.create_task(
             delete_message(chat_id=message.chat.id, message_id=message.message_id, delay=STATS_DELETION_DELAY))
@@ -121,30 +115,31 @@ async def announce_info(message: types.Message):
 async def check_rolls(message: types.Message):
     if isinstance(message.dice, Dice):
         user_name = message.from_user.username if message.from_user.username != None else message.from_user.first_name
-        if not CSVWork.is_user_exists(DATA_FILE, message.from_user.id, message.chat.id):
-            CSVWork.create_record(DATA_FILE, [user_name, 0, 0, 0, message.from_user.id, message.chat.id])  
+        if not db_opers.get_user(message.from_user.id):
+            db_opers.add_user(user_name, message.from_user.id, message.chat.id) 
             await message.reply("Вітання у грі, автоматично зареєстрував.\nДля детальної інформації - /info")
-        else:
-            pass
-        user_stat = CSVWork.return_user_record(DATA_FILE, message.from_user.id, message.chat.id)
+        
         if message.forward_date:
             await message.reply("Шахраям даємо по шапці. -100 з рахунку.")
-            user_stat[3] = str(int(user_stat[3]) - PENALTY)
+            db_opers.update_score(message.from_user.id, -PENALTY)
         else:
             rolled = message.dice
-            user_stat[1] = str(int(user_stat[1]) + 1)
+            # Оновлюємо загальну кількість круток
+            db_opers.update_rolls_total(message.from_user.id)
+            
             if rolled.emoji == "🎰":
-                if rolled.value == 64:
-                    user_stat[3] = str(int(user_stat[3]) + SEVEN_WIN)
-                    user_stat[2] = str(int(user_stat[2]) + 1)
-                elif rolled.value in (1, 22, 43):
-                    user_stat[3] = str(int(user_stat[3]) + THREE_IN_A_ROW_WIN)
-                    user_stat[2] = str(int(user_stat[2]) + 1)
-                else:
-                    user_stat[3] = str(int(user_stat[3]) - 1)
-        CSVWork.update_record(DATA_FILE, message.from_user.id, message.chat.id, user_stat)
+                if rolled.value == 64:  # 777
+                    db_opers.update_score(message.from_user.id, SEVEN_WIN)
+                    db_opers.update_rolls_win(message.from_user.id)
+                elif rolled.value in (1, 22, 43):  # три в ряд
+                    db_opers.update_score(message.from_user.id, THREE_IN_A_ROW_WIN)
+                    db_opers.update_rolls_win(message.from_user.id)
+                else:  # програш
+                    db_opers.update_score(message.from_user.id, -1)
+        
         asyncio.create_task(
             delete_message(chat_id=message.chat.id, message_id=message.message_id, delay=DELETION_DELAY))
+
        
 async def delete_message(chat_id: int, message_id: int, delay: float):
     await asyncio.sleep(delay)
