@@ -84,7 +84,7 @@ async def paginate_stats(query: types.CallbackQuery):
     CHAT_INDICES[user_id] = page
     text = get_stats_page(all_stats, page)
     try:
-        await query.message.edit_text(text, reply_markup=get_keyboard())
+        await query.message.edit_text(text, reply_markup=get_keyboard(), parse_mode=ParseMode.HTML)
     except TelegramBadRequest:
         pass
     await query.answer()
