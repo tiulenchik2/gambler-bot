@@ -4,7 +4,7 @@ import logging
 from aiogram import Bot, Router, Dispatcher, types, F
 from aiogram.filters.command import Command
 from aiogram.types import Dice
-from aiogram.exceptions import TelegramBadRequest
+from aiogram.exceptions import TelegramBadRequest, TelegramRetryAfter
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.enums import ParseMode
@@ -85,9 +85,13 @@ async def paginate_stats(query: types.CallbackQuery):
     text = get_stats_page(all_stats, page)
     try:
         await query.message.edit_text(text, reply_markup=get_keyboard(), parse_mode=ParseMode.HTML)
+    except TelegramRetryAfter as e:
+        await query.answer(f"Забагато запитів! Спробуй через {e.retry_after} сек.", show_alert=True)
+        return
     except TelegramBadRequest:
         pass
-    await query.answer()
+    else:
+        await query.answer()
 @router.message(Command("stats_top"))
 async def check_all_stats(message: types.Message):
     all_stats = CSVWork.sort_records(DATA_FILE, message.chat.id, 3)
