@@ -37,7 +37,7 @@ def get_stats_page(all_stats, page):
 async def check_stats(message: types.Message):
     if db_opers.is_user_exists(message.from_user.id, message.chat.id):
         user_stats = db_opers.get_user(message.from_user.id)
-        # (id, user_name, user_id, chat_id, spins, wins, score)
+        # (id, user_name, spins, wins, score, user_id, chat_id)
         user_place = db_opers.get_user_rank(message.from_user.id, message.chat.id)
         print(user_stats)
         await message.reply(
