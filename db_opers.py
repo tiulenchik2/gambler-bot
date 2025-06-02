@@ -17,7 +17,7 @@ def add_user(username, user_id, chat_id):
     Add a new user to the database.
     """
     cur.execute(
-        "INSERT INTO users (username, user_id, chat_id) VALUES (%s, %s, %s) ON CONFLICT (user_id, chat_id) DO NOTHING;",
+        "INSERT INTO users (username, 0, 0, 0, user_id, chat_id) VALUES (%s, %s, %s) ON CONFLICT (user_id, chat_id) DO NOTHING;",
         (username, user_id, chat_id)
     )
     connect.commit()
