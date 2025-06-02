@@ -13,7 +13,7 @@ import db_opers
 from config import PENALTY, USERS_PER_PAGE, DELETION_DELAY, STATS_DELETION_DELAY, THREE_IN_A_ROW_WIN, SEVEN_WIN
 
 logging.basicConfig(level=logging.INFO)
-load_dotenv(); bot = Bot(token=getenv("TEST_BOT_TOKEN"))
+load_dotenv(); bot = Bot(token=getenv("GAMBLING_BOT_TOKEN"))
 CHAT_INDICES = {}
 router = Router()
 dp = Dispatcher(); dp.include_router(router)
@@ -33,10 +33,16 @@ def get_stats_page(all_stats, page):
         res += f"<b>{idx}</b>. {user[1]}: {user[4]} очок, {user[2]} круток ({user[3]} виграшні)\n"
     return res
 
+async def create_task_deletion_stats(message: types.Message):
+    asyncio.create_task(
+            delete_message(chat_id=message.chat.id, message_id=message.message_id, delay=STATS_DELETION_DELAY))
+    asyncio.create_task(
+            delete_message(chat_id=message.chat.id, message_id=message.message_id+1, delay=STATS_DELETION_DELAY))
+
 @router.message(Command("stats"))
 async def check_stats(message: types.Message):
     if db_opers.is_user_exists(message.from_user.id, message.chat.id):
-        user_stats = db_opers.get_user(message.from_user.id)
+        user_stats = db_opers.get_user(message.from_user.id, message.chat.id)
         # (id, user_name, spins, wins, score, user_id, chat_id)
         user_place = db_opers.get_user_rank(message.from_user.id, message.chat.id)
         print(user_stats)
@@ -49,10 +55,7 @@ async def check_stats(message: types.Message):
         parse_mode=ParseMode.HTML)
     else:
         await message.reply("Не знайшов інфи по користувачу.")
-    asyncio.create_task(
-            delete_message(chat_id=message.chat.id, message_id=message.message_id, delay=STATS_DELETION_DELAY))
-    asyncio.create_task(
-            delete_message(chat_id=message.chat.id, message_id=message.message_id+1, delay=STATS_DELETION_DELAY))
+    await create_task_deletion_stats(message)
 
 
 @router.message(Command("stats_all"))
@@ -62,10 +65,7 @@ async def check_all_stats(message: types.Message):
     CHAT_INDICES[user_id] = 0
     text = get_stats_page(all_stats, 0)
     await message.answer(text, reply_markup=get_keyboard(), parse_mode=ParseMode.HTML)
-    asyncio.create_task(
-            delete_message(chat_id=message.chat.id, message_id=message.message_id, delay=STATS_DELETION_DELAY))
-    asyncio.create_task(
-            delete_message(chat_id=message.chat.id, message_id=message.message_id+1, delay=STATS_DELETION_DELAY))
+    await create_task_deletion_stats(message)
 
 @router.callback_query(F.data.in_(["prev", "next"]))
 async def paginate_stats(query: types.CallbackQuery):
@@ -94,10 +94,7 @@ async def check_all_stats(message: types.Message):
     for a in range(TOP_VALUE):
         res += f"<b>{a+1}</b>. {all_stats[a][1]}: {all_stats[a][4]} очок, {all_stats[a][2]} круток ({all_stats[a][3]} виграшні)\n"
     await message.reply(res, parse_mode=ParseMode.HTML)
-    asyncio.create_task(
-            delete_message(chat_id=message.chat.id, message_id=message.message_id, delay=STATS_DELETION_DELAY))
-    asyncio.create_task(
-            delete_message(chat_id=message.chat.id, message_id=message.message_id+1, delay=STATS_DELETION_DELAY))
+    await create_task_deletion_stats(message)
 
 @router.message(Command("info"))
 async def announce_info(message: types.Message):
@@ -106,10 +103,7 @@ async def announce_info(message: types.Message):
                         "\n- /stats виводить твою інфу: рахунок, скільки крутанув, скільки виграв.\n"
                         "- /stats_all - вся статистика чату.\n"
                         "- /stats_top - лише топ чату\n\nЩиро вдячний, ваш девелопер <3")
-    asyncio.create_task(
-            delete_message(chat_id=message.chat.id, message_id=message.message_id, delay=STATS_DELETION_DELAY))
-    asyncio.create_task(
-            delete_message(chat_id=message.chat.id, message_id=message.message_id+1, delay=STATS_DELETION_DELAY))
+    await create_task_deletion_stats(message)
 
 @router.message()
 async def check_rolls(message: types.Message):

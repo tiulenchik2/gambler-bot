@@ -22,11 +22,11 @@ def add_user(username, user_id, chat_id):
     )
     connect.commit()
 
-def get_user(user_id):
+def get_user(user_id, chat_id):
     """
     Get user information from the database by user_id.
     """
-    cur.execute("SELECT * FROM users WHERE user_id = %s;", (user_id,))
+    cur.execute("SELECT * FROM users WHERE user_id = %s AND chat_id = %s;", (user_id, chat_id))
     return cur.fetchone()
 
 def update_score(user_id, score_delta):

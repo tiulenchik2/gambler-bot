@@ -1,5 +1,3 @@
-# Path to file where user data is stored (str)
-DATA_FILE = "test_users.csv"
 # How many users to show per page in stats (int)
 USERS_PER_PAGE = 10
 # Time in seconds to wait before deleting a message, seconds (float)
