@@ -109,7 +109,7 @@ async def announce_info(message: types.Message):
 async def check_rolls(message: types.Message):
     if isinstance(message.dice, Dice):
         user_name = message.from_user.username if message.from_user.username != None else message.from_user.first_name
-        if not db_opers.get_user(message.from_user.id):
+        if not db_opers.get_user(message.from_user.id, message.chat.id):
             db_opers.add_user(user_name, message.from_user.id, message.chat.id) 
             await message.reply("Вітання у грі, автоматично зареєстрував.\nДля детальної інформації - /info")
         
