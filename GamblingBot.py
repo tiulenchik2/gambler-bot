@@ -45,7 +45,6 @@ async def check_stats(message: types.Message):
         user_stats = db_opers.get_user(message.from_user.id, message.chat.id)
         # (id, user_name, spins, wins, score, user_id, chat_id)
         user_place = db_opers.get_user_rank(message.from_user.id, message.chat.id)
-        print(user_stats)
         await message.reply(
             f"<b>Стата користувача {user_stats[1]}</b>\n\n"
             f"<b>РАХУНОК: {user_stats[4]}</b>\n"
@@ -118,9 +117,7 @@ async def check_rolls(message: types.Message):
             db_opers.update_score(message.from_user.id, -PENALTY)
         else:
             rolled = message.dice
-            # Оновлюємо загальну кількість круток
             db_opers.update_rolls_total(message.from_user.id)
-            
             if rolled.emoji == "🎰":
                 if rolled.value == 64:  # 777
                     db_opers.update_score(message.from_user.id, SEVEN_WIN)
